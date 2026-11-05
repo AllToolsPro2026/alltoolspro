@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://alltoolspro-lk26.maheshnishantha000-903.workers.dev/sitemap.xml
