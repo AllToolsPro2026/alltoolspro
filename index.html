@@ -89,7 +89,70 @@ document.getElementById('search').addEventListener('input',e=>{const q=e.target.
 document.getElementById('year').textContent=new Date().getFullYear();
 const readImage=input=>new Promise((resolve,reject)=>{const f=input.files[0];if(!f)return reject(new Error('Please choose an image first.'));const img=new Image();img.onload=()=>resolve({img,file:f});img.onerror=()=>reject(new Error('Could not read this image.'));img.src=URL.createObjectURL(f)});
 document.getElementById('quality').addEventListener('input',e=>document.getElementById('qval').textContent=e.target.value+'%');
-document.getElementById('compressBtn').onclick=async()=>{const out=document.getElementById('cresult');try{const {img,file}=await readImage(document.getElementById('cfile'));const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',Number(document.getElementById('quality').value)/100));if(!blob)throw Error('Compression failed.');const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='compressed-'+file.name.replace(/\.[^.]+$/,'')+'.jpg';a.click();out.hidden=false;out.textContent=`Original: ${(file.size/1024).toFixed(1)} KB\nCompressed: ${(blob.size/1024).toFixed(1)} KB\nSaved: ${Math.max(0,(1-blob.size/file.size)*100).toFixed(1)}%`;setTimeout(()=>URL.revokeObjectURL(url),30000)}catch(e){out.hidden=false;out.textContent=e.message}};
+document.getElementById('compressBtn').onclick = async () => {
+  const out = document.getElementById('cresult');
+
+  try {
+    const { img, file } = await readImage(document.getElementById('cfile'));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+
+    canvas.getContext('2d').drawImage(img, 0, 0);
+
+    let bestBlob = null;
+    let bestQuality = 0;
+
+    for (let q = Number(document.getElementById('quality').value) / 100; q >= 0.1; q -= 0.05) {
+      const quality = Math.max(0.1, Number(q.toFixed(2)));
+
+      const blob = await new Promise(resolve =>
+        canvas.toBlob(resolve, 'image/jpeg', quality)
+      );
+
+      if (!blob) throw new Error('Compression failed.');
+
+      if (!bestBlob || blob.size < bestBlob.size) {
+        bestBlob = blob;
+        bestQuality = quality;
+      }
+
+      if (blob.size < file.size) break;
+    }
+
+    out.hidden = false;
+
+    if (bestBlob.size >= file.size) {
+      out.textContent =
+        `This image is already small.\n` +
+        `Original: ${(file.size / 1024).toFixed(1)} KB\n` +
+        `Best JPEG: ${(bestBlob.size / 1024).toFixed(1)} KB\n` +
+        `A smaller JPEG could not be created.`;
+      return;
+    }
+
+    const url = URL.createObjectURL(bestBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'compressed-' + file.name.replace(/\.[^.]+$/, '') + '.jpg';
+    a.click();
+
+    const saved = (1 - bestBlob.size / file.size) * 100;
+
+    out.textContent =
+      `Original: ${(file.size / 1024).toFixed(1)} KB\n` +
+      `Compressed: ${(bestBlob.size / 1024).toFixed(1)} KB\n` +
+      `Saved: ${saved.toFixed(1)}%\n` +
+      `JPEG quality: ${Math.round(bestQuality * 100)}%`;
+
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+
+  } catch (error) {
+    out.hidden = false;
+    out.textContent = error.message;
+  }
+};
 document.getElementById('keep').onchange=()=>{document.getElementById('rh').disabled=document.getElementById('keep').checked};
 document.getElementById('resizeBtn').onclick=async()=>{const out=document.getElementById('rresult');try{const {img,file}=await readImage(document.getElementById('rfile'));let w=Number(document.getElementById('rw').value),h=Number(document.getElementById('rh').value);if(!w||!h||w<1||h<1||w>10000||h>10000)throw Error('Enter valid dimensions (1–10000 px).');if(document.getElementById('keep').checked){const ratio=img.naturalWidth/img.naturalHeight;h=Math.round(w/ratio);document.getElementById('rh').value=h}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);const blob=await new Promise(r=>c.toBlob(r,'image/png'));const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='resized-'+file.name.replace(/\.[^.]+$/,'')+'.png';a.click();out.hidden=false;out.textContent=`Downloaded image: ${w} × ${h} px`;setTimeout(()=>URL.revokeObjectURL(url),30000)}catch(e){out.hidden=false;out.textContent=e.message}};
 const updateWords=()=>{const t=document.getElementById('textInput').value;const words=t.trim()?t.trim().split(/\s+/).length:0;const chars=t.length;const no=t.replace(/\s/g,'').length;document.getElementById('wordResult').textContent=`Words: ${words} · Characters: ${chars} · Characters (no spaces): ${no} · Reading time: ${words?Math.max(1,Math.ceil(words/200)):0} min`};document.getElementById('textInput').addEventListener('input',updateWords);
