@@ -24,6 +24,8 @@ label{display:block;font-weight:650;font-size:14px;margin:14px 0 7px}input,texta
 button,.btn{border:0;border-radius:10px;background:var(--blue);color:#fff;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer;margin-top:12px}button.secondary{background:#eaf0f8;color:#1e293b}
 .row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}.result{margin-top:14px;padding:13px;background:#f1f5f9;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere}.hint{font-size:12px;color:var(--muted);margin-top:8px}
 footer{text-align:center;color:var(--muted);padding:25px;border-top:1px solid var(--line);font-size:13px}
+footer a{color:#2563eb;text-decoration:none;margin:0 5px}
+footer a:hover{text-decoration:underline}
 @media(max-width:600px){.hero{padding:43px 18px}.panel{padding:18px}header{padding:14px 18px}}
 </style>
 </head>
@@ -43,14 +45,12 @@ footer{text-align:center;color:var(--muted);padding:25px;border-top:1px solid va
 <button class="tool" data-tool="password"><span class="ico">🔐</span><strong>Password Generator</strong><small>Create a strong random password.</small></button>
 <button class="tool" data-tool="calc"><span class="ico">🧮</span><strong>Calculator</strong><small>Quick everyday calculations.</small></button>
 </div>
-
 <section class="panel" id="compress">
 <h2>Image Compressor</h2><p>Choose an image, adjust quality and download a smaller JPEG. Your image stays on your device.</p>
 <label for="cfile">Choose image</label><input id="cfile" type="file" accept="image/*">
 <label for="quality">JPEG quality: <span id="qval">75%</span></label><input id="quality" type="range" min="10" max="95" value="75">
 <button id="compressBtn">Compress image</button><div id="cresult" class="result" hidden></div>
 </section>
-
 <section class="panel" id="resize">
 <h2>Image Resizer</h2><p>Resize an image by setting its width and height. Your image stays on your device.</p>
 <label for="rfile">Choose image</label><input id="rfile" type="file" accept="image/*">
@@ -58,13 +58,11 @@ footer{text-align:center;color:var(--muted);padding:25px;border-top:1px solid va
 <label><input id="keep" type="checkbox" checked style="width:auto;margin-right:8px">Keep original proportions</label>
 <button id="resizeBtn">Resize and download</button><div id="rresult" class="result" hidden></div>
 </section>
-
 <section class="panel" id="word">
 <h2>Word Counter</h2><p>Paste or type text below to count words and characters instantly.</p>
 <textarea id="textInput" placeholder="Start typing or paste your text here..."></textarea>
 <div class="result" id="wordResult">Words: 0 · Characters: 0 · Characters (no spaces): 0 · Reading time: 0 min</div>
 </section>
-
 <section class="panel" id="password">
 <h2>Password Generator</h2><p>Create a random password. Generate it locally in your browser.</p>
 <div class="row"><div><label for="plen">Password length</label><input id="plen" type="number" min="8" max="64" value="16"></div></div>
@@ -74,7 +72,6 @@ footer{text-align:center;color:var(--muted);padding:25px;border-top:1px solid va
 <label><input id="symbols" type="checkbox" checked style="width:auto;margin-right:8px">Symbols</label>
 <button id="genPass">Generate password</button><div id="passResult" class="result" hidden></div><button class="secondary" id="copyPass">Copy password</button>
 </section>
-
 <section class="panel" id="calc">
 <h2>Calculator</h2><p>Enter a basic arithmetic expression, for example: (25 + 10) × 3.</p>
 <label for="expression">Calculation</label><input id="expression" placeholder="e.g. (25 + 10) * 3">
@@ -82,7 +79,13 @@ footer{text-align:center;color:var(--muted);padding:25px;border-top:1px solid va
 <div class="hint">Supports +, −, ×, ÷, brackets and decimal numbers.</div>
 </section>
 </main>
-<footer>© <span id="year"></span> AllToolsPro · Free tools for everyone</footer>
+<footer>
+  <a href="about.html">About Us</a> |
+  <a href="privacy.html">Privacy Policy</a> |
+  <a href="contact.html">Contact Us</a> |
+  <a href="terms.html">Terms &amp; Conditions</a>
+  <p>© <span id="year"></span> AllToolsPro. All rights reserved.</p>
+</footer>
 <script>
 const panels=[...document.querySelectorAll('.panel')];
 document.querySelectorAll('.tool').forEach(b=>b.addEventListener('click',()=>{panels.forEach(p=>p.classList.remove('active'));document.getElementById(b.dataset.tool).classList.add('active');document.getElementById(b.dataset.tool).scrollIntoView({behavior:'smooth',block:'start'});}));
@@ -92,38 +95,25 @@ const readImage=input=>new Promise((resolve,reject)=>{const f=input.files[0];if(
 document.getElementById('quality').addEventListener('input',e=>document.getElementById('qval').textContent=e.target.value+'%');
 document.getElementById('compressBtn').onclick = async () => {
   const out = document.getElementById('cresult');
-
   try {
     const { img, file } = await readImage(document.getElementById('cfile'));
-
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
-
     canvas.getContext('2d').drawImage(img, 0, 0);
-
     let bestBlob = null;
     let bestQuality = 0;
-
     for (let q = Number(document.getElementById('quality').value) / 100; q >= 0.1; q -= 0.05) {
       const quality = Math.max(0.1, Number(q.toFixed(2)));
-
-      const blob = await new Promise(resolve =>
-        canvas.toBlob(resolve, 'image/jpeg', quality)
-      );
-
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
       if (!blob) throw new Error('Compression failed.');
-
       if (!bestBlob || blob.size < bestBlob.size) {
         bestBlob = blob;
         bestQuality = quality;
       }
-
       if (blob.size < file.size) break;
     }
-
     out.hidden = false;
-
     if (bestBlob.size >= file.size) {
       out.textContent =
         `This image is already small.\n` +
@@ -132,23 +122,18 @@ document.getElementById('compressBtn').onclick = async () => {
         `A smaller JPEG could not be created.`;
       return;
     }
-
     const url = URL.createObjectURL(bestBlob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'compressed-' + file.name.replace(/\.[^.]+$/, '') + '.jpg';
     a.click();
-
     const saved = (1 - bestBlob.size / file.size) * 100;
-
     out.textContent =
       `Original: ${(file.size / 1024).toFixed(1)} KB\n` +
       `Compressed: ${(bestBlob.size / 1024).toFixed(1)} KB\n` +
       `Saved: ${saved.toFixed(1)}%\n` +
       `JPEG quality: ${Math.round(bestQuality * 100)}%`;
-
     setTimeout(() => URL.revokeObjectURL(url), 30000);
-
   } catch (error) {
     out.hidden = false;
     out.textContent = error.message;
